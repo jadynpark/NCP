@@ -33,7 +33,7 @@ rm(list = ls())
 library(knitr); library(kableExtra); library(reshape2); library(tidyverse); library(dplyr); library(effsize);library(rstatix); library(tables); library(ggplot2); library(ggpubr); library(RColorBrewer); library(ez); source("~/Desktop/Anxiety NCP/summarySEwithin2.R"); library(wesanderson); library(forcats)
 
 #import data - demographics, self report, and PCET
-data <- read.csv("~/Desktop/Anxiety NCP/Anxiety_NCP_master.csv", header = TRUE)
+data <- read.csv("~/Desktop/Anxiety NCP/raw data/Anxiety_NCP_master.csv", header = TRUE)
 ```
 
 ### Demographics
@@ -451,18 +451,32 @@ Low
 </table>
 
 ``` r
-# BAI-CAPE regression graph 
+# BAI-CAPE regression graph combined
+ggplot(SR, aes(x=Pos_Freq, y=BAI.sum)) + 
+ geom_point() +
+  geom_smooth(method = lm , se = TRUE) +
+   labs(title = "Correlation between CAPE and BAI Score",
+       x = "CAPE Positive Frequency score", y = "BAI score") +
+  theme_classic() +
+  stat_cor(method = "pearson", label.x = c(12, 3), label.y = c(30, 30)) +
+  scale_color_manual(values = "#998ec3")
+```
+
+![](analysis_files/figure-gfm/selfreport-1.png)<!-- -->
+
+``` r
+# BAI-CAPE regression graph by PLE group
 ggplot(SR, aes(x=Pos_Freq, y=BAI.sum, col = Group)) + 
  geom_point() +
   geom_smooth(method = lm , se = TRUE) +
-   labs(title = "Correlation between CAPE score (Positive Frequency Only) and BAI score",
+   labs(title = "Correlation between CAPE and BAI Score by PLE Group",
        x = "CAPE Positive Frequency score", y = "BAI score") +
   theme_classic() +
   stat_cor(method = "pearson", label.x = c(12, 3), label.y = c(30, 30)) +
   scale_color_manual(values = c("#998ec3", "#f1a340")) 
 ```
 
-![](analysis_files/figure-gfm/selfreport-1.png)<!-- -->
+![](analysis_files/figure-gfm/selfreport-2.png)<!-- -->
 
 Significant main effect of group on anxiety such that the high-NCP group
 endorsed more anxiety symptoms than the low-NCP group
@@ -521,7 +535,7 @@ high <- pcet %>% filter(Group == "High") #subset of high-NCP
 low <- pcet %>% filter(Group == "Low") #subset of low-NCP
 pcet$Group <- factor(pcet$Group, levels = c("Low", "High")) # "Group" variable w/ 2 factors
 
-data <- read.csv("~/Desktop/Anxiety NCP/Anxiety_NCP_master.csv", header = TRUE)
+data <- read.csv("~/Desktop/Anxiety NCP/raw data/Anxiety_NCP_master.csv", header = TRUE)
 
 library(outliers)
 ##### 1. Category Achieved #####
@@ -550,7 +564,7 @@ pcet %>%
              size = 2, alpha = 0.8) +
   geom_boxplot(width = .1, outlier.shape = NA, alpha = 0.5) +
   coord_flip() +
-  labs(title = "Accuracy By Group",
+  labs(title = "Accuracy By PLE Group",
        y = "Accuracy") +
   theme_classic() +
   scale_fill_manual(values = c("#f1a340","#998ec3")) +
@@ -582,7 +596,7 @@ pcet %>%
   geom_boxplot(width = .1, outlier.shape = NA, alpha = 0.5) +
   #scale_x_discrete(labels=grouplabs) +
   coord_flip() +
-  labs(title = "Efficiency By Group",
+  labs(title = "Efficiency By PLE Group",
        y = "Efficiency") +
   theme_classic() +
   scale_fill_manual(values = c("#f1a340","#998ec3")) +
@@ -614,7 +628,7 @@ pcet %>%
   geom_boxplot(width = .1, outlier.shape = NA, alpha = 0.5) +
   #scale_x_discrete(labels=grouplabs) +
   coord_flip() +
-  labs(title = "Perseveration Errors By Group",
+  labs(title = "Perseveration Errors By PLE Group",
        y = "# of Perseverative Errors") +
   theme_classic() +
   scale_fill_manual(values = c("#f1a340","#998ec3")) +
@@ -646,7 +660,7 @@ low.summary <- cbind(l.cat, l.acc.sum, l.eff.sum, l.err.sum)
 cohensd <- abs(round(cbind(cat.d[["estimate"]], acc.d[["estimate"]], eff.d[["estimate"]], err.d[["estimate"]]), 3))
 performance.table <- data.frame(rbind(high.summary, low.summary, pval, cohensd))
 colnames(performance.table) <- c("CAT", "Accuracy", "Efficiency", "Perseveration")
-rownames(performance.table) <- c("High NCP", "Low NCP", "p-value", "Cohen's D")
+rownames(performance.table) <- c("High PLE", "Low PLE", "p-value", "Cohen's D")
 
 knitr::kable(performance.table,caption = "Category Achieved, Accuracy, Efficiency, and Perseveration Summary") %>%
   kable_styling(c("striped", "bordered", full_width = F)) 
@@ -677,7 +691,7 @@ Perseveration
 <tbody>
 <tr>
 <td style="text-align:left;">
-High NCP
+High PLE
 </td>
 <td style="text-align:left;">
 2.5(0.59)
@@ -694,7 +708,7 @@ High NCP
 </tr>
 <tr>
 <td style="text-align:left;">
-Low NCP
+Low PLE
 </td>
 <td style="text-align:left;">
 2.82(0.39)
@@ -970,8 +984,8 @@ pcet <- pcet %>% filter(!is.na(anxiety)) # omit NA values
 # Modify dataframe with interaction variable
 pcet <- pcet %>% 
   mutate(Group = ifelse(Group == "Low",
-                        "Low NCP",
-                        "High NCP"),
+                        "Low PLE",
+                        "High PLE"),
          Anxiety = ifelse(anxiety == "above",
                            "High Anx",
                            "Low Anx"),
@@ -980,7 +994,8 @@ pcet <- pcet %>%
                               ordered=TRUE)) 
 
 # Relevel Interaction variable factor so that high NCP is above low NCP
-pcet$Interaction <- factor(pcet$Interaction, levels = c("Low NCP\nHigh Anx", "Low NCP\nLow Anx", "High NCP\nHigh Anx", "High NCP\nLow Anx")) 
+pcet$Interaction <- factor(pcet$Interaction, levels = c("Low PLE\nHigh Anx", "Low PLE\nLow Anx", "High PLE\nHigh Anx", "High PLE\nLow Anx")) 
+
 # Anxiety by group
 pcet %>% 
   ggplot(aes(x = Group, y = BAI.sum, fill = Group)) + 
@@ -992,7 +1007,7 @@ pcet %>%
   geom_boxplot(width = .1, outlier.shape = NA, alpha = 0.5) +
   #scale_x_discrete(labels=grouplabs) +
   coord_flip() +
-  labs(title = "Anxiety By Group",
+  labs(title = "Anxiety Symptoms By PLE Group",
        y = "BAI Score") +
   theme_classic() +
   scale_fill_manual(values = c("#f1a340","#998ec3")) +
@@ -1013,7 +1028,7 @@ pcet %>%
              size = 2, alpha = 0.8) +
   geom_boxplot(width = .1, outlier.shape = NA, alpha = 0.5) +
   coord_flip() +
-  labs(title = "Anxiety and Psychosis Symptoms on Accuracy by Group",
+  labs(title = "Anxiety and Psychosis Symptoms on Accuracy by PLE Group",
        y = "Accuracy") +
   scale_fill_discrete(guide = guide_legend(override.aes = list(shape = c(".", ".")))) +
   scale_shape_discrete(guide = guide_legend(override.aes = list(size = 3))) +
@@ -1199,3 +1214,288 @@ summary(lm(data = interac2, PER_ER ~ BAI.sum*Group))
     ##   (18 observations deleted due to missingness)
     ## Multiple R-squared:  0.3155, Adjusted R-squared:  0.2688 
     ## F-statistic: 6.759 on 3 and 44 DF,  p-value: 0.0007557
+
+Testing mediation model (does anxiety mediate the relationship between
+PLE and Executive functioning measures?)
+
+``` r
+## NAs must be omitted to run the mediation model
+model.data <- data %>% dplyr::select(Pos_Freq, BAI.sum, PCET_ACC2, PCET_EFF, PER_ER)
+model.data <- na.omit(model.data)
+
+## 1. Test the total effect (the effect of PLE -> performance)
+acc.totaleffect=lm(PCET_ACC2~Pos_Freq, model.data)
+summary(acc.totaleffect)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = PCET_ACC2 ~ Pos_Freq, data = model.data)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -1.7992 -0.7298  0.3534  0.5607  1.4535 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  2.96830    0.21316  13.925   <2e-16 ***
+    ## Pos_Freq    -0.05749    0.02255  -2.549   0.0142 *  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.8409 on 46 degrees of freedom
+    ## Multiple R-squared:  0.1238, Adjusted R-squared:  0.1048 
+    ## F-statistic:   6.5 on 1 and 46 DF,  p-value: 0.01419
+
+``` r
+  # total effect of PLE on Accuracy is significant (p=.01)
+
+## PLE -> Efficiency
+eff.totaleffect=lm(PCET_EFF~Pos_Freq, model.data)
+summary(eff.totaleffect)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = PCET_EFF ~ Pos_Freq, data = model.data)
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -0.19845 -0.08265  0.03276  0.06398  0.16640 
+    ## 
+    ## Coefficients:
+    ##              Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  0.304835   0.023746  12.837   <2e-16 ***
+    ## Pos_Freq    -0.006790   0.002512  -2.703   0.0096 ** 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.09367 on 46 degrees of freedom
+    ## Multiple R-squared:  0.1371, Adjusted R-squared:  0.1183 
+    ## F-statistic: 7.306 on 1 and 46 DF,  p-value: 0.009596
+
+``` r
+  # total effect of PLE on Efficiency is significant (p=.01)
+
+## PLE -> Perseverative errors
+err.totaleffect=lm(PER_ER~Pos_Freq, model.data)
+summary(err.totaleffect)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = PER_ER ~ Pos_Freq, data = model.data)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -14.070  -5.019  -2.329   4.365  17.199 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)   
+    ## (Intercept)   6.7721     2.0389   3.321  0.00176 **
+    ## Pos_Freq      0.6057     0.2157   2.808  0.00728 **
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 8.043 on 46 degrees of freedom
+    ## Multiple R-squared:  0.1464, Adjusted R-squared:  0.1278 
+    ## F-statistic: 7.887 on 1 and 46 DF,  p-value: 0.007284
+
+``` r
+  # total effect of PLE on Perseverative Errors is significant (p<.01)
+
+## 2. Test the effect of IV on the mediator (PLE -> anxiety)
+fit.mediator=lm(BAI.sum~Pos_Freq, model.data)
+summary(fit.mediator)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = BAI.sum ~ Pos_Freq, data = model.data)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -20.658  -5.510  -3.288   3.569  38.249 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)    5.176      2.788   1.856 0.069815 .  
+    ## Pos_Freq       1.093      0.295   3.705 0.000566 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 11 on 46 degrees of freedom
+    ## Multiple R-squared:  0.2298, Adjusted R-squared:  0.213 
+    ## F-statistic: 13.72 on 1 and 46 DF,  p-value: 0.0005665
+
+``` r
+  # significant effect of PLE on anxiety (p<.01)
+
+## 3. Test the effect of mediator on DV (anxiety -> performance)
+fit.acc=lm(PCET_ACC2~Pos_Freq+BAI.sum, model.data)
+summary(fit.acc)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = PCET_ACC2 ~ Pos_Freq + BAI.sum, data = model.data)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -2.1655 -0.6379  0.2969  0.5347  1.1955 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  2.88074    0.21790  13.220   <2e-16 ***
+    ## Pos_Freq    -0.07598    0.02533  -2.999   0.0044 ** 
+    ## BAI.sum      0.01692    0.01111   1.522   0.1350    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.8291 on 45 degrees of freedom
+    ## Multiple R-squared:  0.1667, Adjusted R-squared:  0.1297 
+    ## F-statistic: 4.501 on 2 and 45 DF,  p-value: 0.01652
+
+``` r
+  # the mediator does not have significant effect (p=.135)
+  # PLE is still a significant predictor of accuracy
+
+fit.eff=lm(PCET_EFF~Pos_Freq+BAI.sum, model.data)
+summary(fit.eff)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = PCET_EFF ~ Pos_Freq + BAI.sum, data = model.data)
+    ## 
+    ## Residuals:
+    ##      Min       1Q   Median       3Q      Max 
+    ## -0.23722 -0.06550  0.03781  0.06343  0.13529 
+    ## 
+    ## Coefficients:
+    ##              Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)  0.294277   0.024167  12.177 7.69e-16 ***
+    ## Pos_Freq    -0.009019   0.002810  -3.210  0.00245 ** 
+    ## BAI.sum      0.002040   0.001233   1.655  0.10490    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 0.09195 on 45 degrees of freedom
+    ## Multiple R-squared:  0.1866, Adjusted R-squared:  0.1504 
+    ## F-statistic: 5.161 on 2 and 45 DF,  p-value: 0.009599
+
+``` r
+  # the mediator does not have significant effect (p=.105)
+  # PLE is still a significant predictor of efficiency
+
+
+fit.err=lm(PER_ER~Pos_Freq+BAI.sum, model.data)
+summary(fit.err)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = PER_ER ~ Pos_Freq + BAI.sum, data = model.data)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -10.964  -4.878  -2.748   5.269  19.359 
+    ## 
+    ## Coefficients:
+    ##             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)   7.9660     2.0281   3.928 0.000292 ***
+    ## Pos_Freq      0.8578     0.2358   3.638 0.000705 ***
+    ## BAI.sum      -0.2307     0.1034  -2.230 0.030782 *  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 7.717 on 45 degrees of freedom
+    ## Multiple R-squared:  0.2313, Adjusted R-squared:  0.1971 
+    ## F-statistic:  6.77 on 2 and 45 DF,  p-value: 0.002688
+
+``` r
+  # the mediator significantly predicts perseverative errors (p<.05)
+  # PLE is still a significant predictor of perseverative errors
+
+## 4. Causal mediation analysis
+library(mediation)
+
+
+## Do anxiety symptoms mediate PLE -> accuracy?
+acc_results=mediate(fit.mediator, fit.acc, treat='Pos_Freq',
+                mediator='BAI.sum', boot=T)
+summary(acc_results)
+```
+
+    ## 
+    ## Causal Mediation Analysis 
+    ## 
+    ## Nonparametric Bootstrap Confidence Intervals with the Percentile Method
+    ## 
+    ##                Estimate 95% CI Lower 95% CI Upper p-value  
+    ## ACME             0.0185      -0.0102         0.06    0.25  
+    ## ADE             -0.0760      -0.1317        -0.01    0.02 *
+    ## Total Effect    -0.0575      -0.1013        -0.01    0.02 *
+    ## Prop. Mediated  -0.3215      -1.8879         0.26    0.25  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Sample Size Used: 48 
+    ## 
+    ## 
+    ## Simulations: 1000
+
+``` r
+  # ACME: no indirect effect of PLE on accuracy (p=.228)
+  # ADE: direct effect of PLE on accuracy when controlling for anxiety
+  # Total Effect
+  # 
+
+## Do anxiety symptoms mediate PLE -> efficiency?
+eff_results=mediate(fit.mediator, fit.eff, treat='Pos_Freq',
+                mediator='BAI.sum', boot=T)
+summary(eff_results)
+```
+
+    ## 
+    ## Causal Mediation Analysis 
+    ## 
+    ## Nonparametric Bootstrap Confidence Intervals with the Percentile Method
+    ## 
+    ##                Estimate 95% CI Lower 95% CI Upper p-value  
+    ## ACME            0.00223     -0.00105         0.01   0.216  
+    ## ADE            -0.00902     -0.01514         0.00   0.016 *
+    ## Total Effect   -0.00679     -0.01151         0.00   0.016 *
+    ## Prop. Mediated -0.32827     -2.01897         0.19   0.216  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Sample Size Used: 48 
+    ## 
+    ## 
+    ## Simulations: 1000
+
+``` r
+## DO anxiety symptoms mediate PLE -> perseverative errors?
+err_results=mediate(fit.mediator, fit.err, treat='Pos_Freq',
+                mediator='BAI.sum', boot=T)
+summary(err_results)
+```
+
+    ## 
+    ## Causal Mediation Analysis 
+    ## 
+    ## Nonparametric Bootstrap Confidence Intervals with the Percentile Method
+    ## 
+    ##                Estimate 95% CI Lower 95% CI Upper p-value    
+    ## ACME             -0.252       -0.681         0.03   0.112    
+    ## ADE               0.858        0.320         1.41  <2e-16 ***
+    ## Total Effect      0.606        0.157         1.09   0.004 ** 
+    ## Prop. Mediated   -0.416       -2.077         0.05   0.116    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Sample Size Used: 48 
+    ## 
+    ## 
+    ## Simulations: 1000
